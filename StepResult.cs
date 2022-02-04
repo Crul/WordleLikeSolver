@@ -1,4 +1,6 @@
-﻿namespace WordleSolver
+﻿using System.Linq;
+
+namespace WordleSolver
 {
     enum CharResult
     {
@@ -21,6 +23,26 @@
                 GetStepCharResult(secret, candidate, 3),
                 GetStepCharResult(secret, candidate, 4)
             };
+        }
+
+        public bool IsWin() => Result.Count(r => r == CharResult.IN_WORD_IN_POSITION) == 5;
+
+        public override string ToString()
+            => string.Join(string.Empty, Result.Select(ToString));
+
+        private static string ToString(CharResult charResult)
+        {
+            switch (charResult)
+            {
+                case CharResult.NOT_IN_WORD:
+                    return "X";
+                case CharResult.IN_WORD_WRONG_POSITION:
+                    return "?";
+                case CharResult.IN_WORD_IN_POSITION:
+                    return "√";
+                default:
+                    return "E";
+            }
         }
 
         private CharResult GetStepCharResult(string secret, string candidate, int idx)

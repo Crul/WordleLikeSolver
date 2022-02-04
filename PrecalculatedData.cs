@@ -14,7 +14,7 @@ namespace WordleSolver
         public Dictionary<char, List<int>>[] WordIdsByInPosForcedCharByPosition { get; private set; }
         public Dictionary<char, List<int>>[] WordIdsByNotInPosForcedCharByPosition { get; private set; }
 
-        public PrecalculatedData(string words, int? maxCandidateCount)
+        public PrecalculatedData(string words, int? maxCandidateCount = null)
         {
             Words = words.Split(" ");
 
