@@ -56,7 +56,7 @@ namespace WordleSolver
                 var secretWord = precalculatedData.Words[i];
                 var turns = Solve(precalculatedData, secretWord, firstWord, printResults: false);
                 totalTurns += turns;
-                if (turns > 3)
+                if (turns > 5)
                     Console.WriteLine($"Secret Word {secretWord}: {turns} turns\n");
 
                 if (turns > 6)
@@ -97,6 +97,7 @@ namespace WordleSolver
         {
             var turn = 0;
             var candidate = firstWord;
+            var words = precalculatedData.Words;
             List<int> candidates = null;
             while (true)
             {
@@ -121,26 +122,32 @@ namespace WordleSolver
 
                 if (candidates.Count == 1)
                 {
-                    candidate = precalculatedData.Words[candidates[0]];
+                    candidate = words[candidates[0]];
                     continue;
                 }
 
                 var minNextCandidates = int.MaxValue;
-                for (int i = 0; i < precalculatedData.Words.Length; i++)
+                for (int nextCandidateIdx = 0; nextCandidateIdx < words.Length; nextCandidateIdx++)
                 {
-                    var hypotheticalCandidate = precalculatedData.Words[i];
-                    stepResult = new StepResult(secretWord, hypotheticalCandidate);
-
-                    var hypoteticalCandidates
-                        = GetCandidatesOnNextStep(
-                            candidates, stepResult, precalculatedData, hypotheticalCandidate
-                        ).ToList();
-
-                    var hypoteticalCandidatesCount = hypoteticalCandidates.Count;
-                    if (hypoteticalCandidatesCount < minNextCandidates)
+                    var nextCandidatesCount = 0;
+                    var nextCandidate = words[nextCandidateIdx];
+                    for (int secretIdx = 0; secretIdx < candidates.Count; secretIdx++)
                     {
-                        minNextCandidates = hypoteticalCandidatesCount;
-                        candidate = hypotheticalCandidate;
+                        var hypotheticalSecret = words[candidates[secretIdx]];
+                        stepResult = new StepResult(hypotheticalSecret, nextCandidate);
+
+                        var hypoteticalCandidates
+                            = GetCandidatesOnNextStep(
+                                candidates, stepResult, precalculatedData, nextCandidate
+                            ).ToList();
+
+                        nextCandidatesCount += hypoteticalCandidates.Count;
+                    }
+
+                    if (nextCandidatesCount < minNextCandidates)
+                    {
+                        minNextCandidates = nextCandidatesCount;
+                        candidate = nextCandidate;
                     }
                 }
             }
