@@ -10,30 +10,24 @@ namespace WordleSolver
 
         public string[] Words { get; set; }
         public List<string> CandidateWords { get; set; }
-        public Dictionary<char, List<int>> WordIdsByForbiddenChar { get; private set; }
-        public Dictionary<char, List<int>>[] WordIdsByInPosForcedCharByPosition { get; private set; }
-        public Dictionary<char, List<int>>[] WordIdsByNotInPosForcedCharByPosition { get; private set; }
+        public Dictionary<char, List<int>> WordIdsByForbiddenChar { get; }
+        public Dictionary<char, List<int>>[] WordIdsByInPosForcedCharByPosition { get; }
+        public Dictionary<char, List<int>>[] WordIdsByNotInPosForcedCharByPosition { get; }
+        private Dictionary<char, int> CharactersCount { get; }
 
         public PrecalculatedData(string words, int? maxCandidateCount = null)
         {
             Words = words.Split(" ");
 
+            CharactersCount = CHARS.ToDictionary(
+                character => character,
+                character => words.Count(ch => ch == character)
+            );
+
             if (maxCandidateCount.HasValue)
             {
                 Console.WriteLine($"Searghing only in top {maxCandidateCount.Value}");
-                var charactersCount = CHARS
-                    .ToDictionary(
-                        character => character,
-                        character => words.Count(ch => ch == character)
-                    );
-
-                CandidateWords = Words
-                    .Where(word => word.Distinct().Count() == 5)
-                    .Select(word => (word, score: word.Sum(ch => charactersCount[ch])))
-                    .OrderByDescending(data => data.score)
-                    .Take(maxCandidateCount.Value)
-                    .Select(data => data.word)
-                    .ToList();
+                CandidateWords = FilterBestTopCandidates(Words, maxCandidateCount.Value);
             }
             else
                 CandidateWords = Words
@@ -55,6 +49,15 @@ namespace WordleSolver
                     (idx, word, character) => word[idx] != character && word.Contains(character)
                 );
         }
+
+        private List<string> FilterBestTopCandidates(string[] candidates, int limit)
+            => candidates
+                .Where(word => word.Distinct().Count() == 5)
+                .Select(word => (word, score: word.Sum(ch => CharactersCount[ch])))
+                .OrderByDescending(data => data.score)
+                .Take(limit)
+                .Select(data => data.word)
+                .ToList();
 
         public List<int> FilterByCharResult(StepResult stepResult, string candidateWord, int idx)
         {

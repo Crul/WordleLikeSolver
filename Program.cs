@@ -8,6 +8,7 @@ namespace WordleSolver
     class Program
     {
         private const string WORDS_FILEPATH = @"C:\workspace\wordle\words.txt";
+        private const int CANDIDATES_TO_EXPLORE_LIMIT = 50;
 
         static void Main(string[] args)
         {
@@ -99,6 +100,7 @@ namespace WordleSolver
             var candidate = firstWord;
             var words = precalculatedData.Words;
             List<int> candidates = null;
+            var usedWords = new List<string>();
             while (true)
             {
                 turn++;
@@ -127,27 +129,41 @@ namespace WordleSolver
                 }
 
                 var minNextCandidates = int.MaxValue;
+                var candidatesToExplore = candidates.ToList();
+                if (candidatesToExplore.Count > CANDIDATES_TO_EXPLORE_LIMIT)
+                {
+                    candidatesToExplore = candidatesToExplore
+                        .Where(idx => precalculatedData.Words[idx].Distinct().Count() == 5)
+                        .ToList();
+
+                    if (candidatesToExplore.Count == 0)
+                        candidatesToExplore = candidates.ToList();
+                }
+
                 for (int nextCandidateIdx = 0; nextCandidateIdx < words.Length; nextCandidateIdx++)
                 {
                     var nextCandidatesCount = 0;
                     var nextCandidate = words[nextCandidateIdx];
-                    for (int secretIdx = 0; secretIdx < candidates.Count; secretIdx++)
+                    if (!usedWords.Contains(nextCandidate))
                     {
-                        var hypotheticalSecret = words[candidates[secretIdx]];
-                        stepResult = new StepResult(hypotheticalSecret, nextCandidate);
+                        for (int secretIdx = 0; secretIdx < candidatesToExplore.Count; secretIdx++)
+                        {
+                            var hypotheticalSecret = words[candidatesToExplore[secretIdx]];
+                            stepResult = new StepResult(hypotheticalSecret, nextCandidate);
 
-                        var hypoteticalCandidates
-                            = GetCandidatesOnNextStep(
-                                candidates, stepResult, precalculatedData, nextCandidate
-                            ).ToList();
+                            var hypoteticalCandidates
+                                = GetCandidatesOnNextStep(
+                                    candidatesToExplore, stepResult, precalculatedData, nextCandidate
+                                ).ToList();
 
-                        nextCandidatesCount += hypoteticalCandidates.Count;
-                    }
+                            nextCandidatesCount += hypoteticalCandidates.Count;
+                        }
 
-                    if (nextCandidatesCount < minNextCandidates)
-                    {
-                        minNextCandidates = nextCandidatesCount;
-                        candidate = nextCandidate;
+                        if (nextCandidatesCount < minNextCandidates)
+                        {
+                            minNextCandidates = nextCandidatesCount;
+                            candidate = nextCandidate;
+                        }
                     }
                 }
             }
