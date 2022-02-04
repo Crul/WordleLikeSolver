@@ -9,9 +9,6 @@ namespace WordleSolver
     {
         private const string WORDS_FILEPATH = @"C:\workspace\wordle\words.txt";
 
-        private static string[] WORDS = null;
-        private static int WORD_COUNT = 0;
-
         static void Main(string[] args)
         {
             GetBestInitialWord(args);
@@ -19,37 +16,20 @@ namespace WordleSolver
 
         private static void GetBestInitialWord(string[] args)
         {
-            WORDS = System.IO.File.ReadAllText(WORDS_FILEPATH).Split(" ");
-            // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            // var rnd = new Random();
-            // WORDS = WORDS.OrderBy(item => rnd.Next()).Take(500).ToArray();
-            // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            WORD_COUNT = WORDS.Length;
-            var candidateWords = WORDS.Where(word => word.Distinct().Count() == 5).ToList();
-
-            var candidateStartIdx = 0;
-            var candidateEndIdx = candidateWords.Count;
-            if (args.Length == 2)
-            {
-                var chunks = int.Parse(args[0]);
-                var chunkIdx = int.Parse(args[1]);
-                var wordsPerChunk = WORD_COUNT / chunks;
-                candidateStartIdx = chunkIdx * wordsPerChunk;
-                candidateEndIdx = candidateStartIdx + wordsPerChunk;
-                Console.WriteLine($"Interval: {candidateStartIdx} {candidateEndIdx}");
-            }
-
-            var precalculatedData = new PrecalculatedData(WORDS);
+            var words = System.IO.File.ReadAllText(WORDS_FILEPATH);
+            var precalculatedData = new PrecalculatedData(words, GetMaxCandidateCount(args));
             Console.WriteLine("Data precalculated");
 
             var watch = Stopwatch.StartNew();
+            var wordCount = precalculatedData.Words.Length;
+            var candidateWords = precalculatedData.CandidateWords;
             var avgCandidatesOn2ndStepByWordIdx = new float[candidateWords.Count];
-            for (int candidateIdx = candidateStartIdx; candidateIdx < candidateEndIdx; candidateIdx++)
+            for (int candidateIdx = 0; candidateIdx < candidateWords.Count; candidateIdx++)
             {
-                for (int secretIdx = 0; secretIdx < WORD_COUNT; secretIdx++)
+                for (int secretIdx = 0; secretIdx < wordCount; secretIdx++)
                 {
                     var candidateWord = candidateWords[candidateIdx];
-                    var secretWord = WORDS[secretIdx];
+                    var secretWord = precalculatedData.Words[secretIdx];
                     if (candidateWord != secretWord)
                     {
                         var stepResult = new StepResult(secretWord, candidateWord);
@@ -59,8 +39,8 @@ namespace WordleSolver
                     }
                 }
 
-                avgCandidatesOn2ndStepByWordIdx[candidateIdx] /= WORD_COUNT;
-                var percentage = 100.0 * (candidateIdx - candidateStartIdx + 1) / candidateEndIdx;
+                avgCandidatesOn2ndStepByWordIdx[candidateIdx] /= wordCount;
+                var percentage = 100.0 * (candidateIdx + 1) / candidateWords.Count;
                 var ellapsed = watch.ElapsedMilliseconds / 1000.0;
                 Console.Write(
                     $"\r   {percentage:0.00000}" +
@@ -78,6 +58,15 @@ namespace WordleSolver
                 .ForEach(data => Console.WriteLine($"     {candidateWords[data.idx]}: {data.avg:00.000}"));
 
             Console.ReadLine();
+        }
+
+        private static int? GetMaxCandidateCount(string[] args)
+        {
+            int maxCandidateCount;
+            if (args.Length == 0 || !int.TryParse(args[0], out maxCandidateCount))
+                return null;
+
+            return maxCandidateCount;
         }
 
         private static int GetCandidatesOn2ndStep(

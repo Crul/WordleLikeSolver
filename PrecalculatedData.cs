@@ -7,15 +7,38 @@ namespace WordleSolver
     class PrecalculatedData
     {
         private const string CHARS = "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ";
-        private readonly string[] Words;
 
+        public string[] Words { get; set; }
+        public List<string> CandidateWords { get; set; }
         public Dictionary<char, List<int>> WordIdsByForbiddenChar { get; private set; }
         public Dictionary<char, List<int>>[] WordIdsByInPosForcedCharByPosition { get; private set; }
         public Dictionary<char, List<int>>[] WordIdsByNotInPosForcedCharByPosition { get; private set; }
 
-        public PrecalculatedData(string[] words)
+        public PrecalculatedData(string words, int? maxCandidateCount)
         {
-            Words = words;
+            Words = words.Split(" ");
+
+            if (maxCandidateCount.HasValue)
+            {
+                Console.WriteLine($"Searghing only in top {maxCandidateCount.Value}");
+                var charactersCount = CHARS
+                    .ToDictionary(
+                        character => character,
+                        character => words.Count(ch => ch == character)
+                    );
+
+                CandidateWords = Words
+                    .Where(word => word.Distinct().Count() == 5)
+                    .Select(word => (word, score: word.Sum(ch => charactersCount[ch])))
+                    .OrderByDescending(data => data.score)
+                    .Take(maxCandidateCount.Value)
+                    .Select(data => data.word)
+                    .ToList();
+            }
+            else
+                CandidateWords = Words
+                    .Where(word => word.Distinct().Count() == 5)
+                    .ToList();
 
             WordIdsByForbiddenChar = new Dictionary<char, List<int>>();
             foreach (var character in CHARS)
