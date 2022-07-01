@@ -47,11 +47,27 @@ namespace WordleSolver
 
         private CharResult GetStepCharResult(string secret, string candidate, int idx)
         {
-            if (candidate[idx] == secret[idx])
+            var candidateChar = candidate[idx];
+            if (candidateChar == secret[idx])
                 return CharResult.IN_WORD_IN_POSITION;
 
-            if (secret.Contains(candidate[idx]))
-                return CharResult.IN_WORD_WRONG_POSITION;
+            if (secret.Contains(candidateChar))
+            {
+                var charOccurrencesRevealed = 0;
+                for (var jdx = 0; jdx < 5; jdx++)
+                {
+                    if (idx == jdx) continue;
+
+                    if (candidate[jdx] == candidateChar)
+                    {
+                        if (secret[jdx] == candidateChar || jdx < idx)
+                            charOccurrencesRevealed++;
+                    }
+                }
+
+                if (secret.Count(c => c == candidateChar) > charOccurrencesRevealed)
+                    return CharResult.IN_WORD_WRONG_POSITION;
+            }
 
             return CharResult.NOT_IN_WORD;
         }
