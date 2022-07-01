@@ -44,6 +44,19 @@ namespace WordleSolver
                         attempts: args.Skip(2).ToList()
                     );
                     return;
+
+                case "candidates":
+                    if (args.Length < 2)
+                        break;
+
+                    var candidates = GetCandidates(
+                        secretWord: args[1],
+                        attempts: args.Skip(2).ToList()
+                    );
+                    Console.WriteLine(
+                        string.Join(Environment.NewLine, candidates.OrderBy(c => c))
+                    );
+                    return;
             }
 
             PrintHelp();
@@ -181,6 +194,26 @@ namespace WordleSolver
                 Console.WriteLine($"{Environment.NewLine}SOLVED: {candidate}");
 
             return turn;
+        }
+
+        private static string[] GetCandidates(
+            string secretWord,
+            List<string> attempts
+        )
+        {
+            List<int> candidates = null;
+            var allWords = System.IO.File.ReadAllText(WordsFilepath);
+            var precalculatedData = new PrecalculatedData(allWords);
+            foreach (var attempt in attempts)
+            {
+                var stepResult = new StepResult(secretWord, attempt);
+                candidates = GetCandidatesOnNextStep(
+                    candidates, stepResult, precalculatedData, attempt);
+            }
+
+            return candidates
+                .Select(c => precalculatedData.Words[c])
+                .ToArray();
         }
 
         private static List<int> GetCandidatesOnNextStep(
@@ -494,7 +527,8 @@ namespace WordleSolver
             => Console.WriteLine(
                 "Specify command:" + Environment.NewLine +
                 " > WordleSolver.exe [ES|EN] best-first-word [MAX_CANDIDATE_COUNT (optional)] " + Environment.NewLine +
-                " > WordleSolver.exe [ES|EN] solve [SECRET_WORD] [FIRST_WORD]" + Environment.NewLine
+                " > WordleSolver.exe [ES|EN] solve [SECRET_WORD] [FIRST_WORD]" + Environment.NewLine +
+                " > WordleSolver.exe [ES|EN] candidates [SECRET_WORD] [ [FIRST_WORD], [SECOND_WORD], ... ]" + Environment.NewLine
             );
     }
 }
