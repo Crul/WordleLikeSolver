@@ -17,7 +17,8 @@ namespace WordleSolver
 
         public PrecalculatedData(string words, int? maxCandidateCount = null)
         {
-            Words = words.Split(" ");
+            var rng = new Random();
+            Words = words.Split(" ").OrderBy(_ => rng.Next()).ToArray();
 
             CharactersCount = CHARS.ToDictionary(
                 character => character,
