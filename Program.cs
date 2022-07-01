@@ -7,7 +7,7 @@ namespace WordleSolver
 {
     class Program
     {
-        private const string WORDS_FILEPATH = @"C:\workspace\wordle\words.txt";
+        private static string WordsFilepath = @"C:\workspace\wordle\words-";
         private const int CANDIDATES_TO_EXPLORE_LIMIT = 50;
 
         static void Main(string[] args)
@@ -17,6 +17,9 @@ namespace WordleSolver
                 PrintHelp();
                 return;
             }
+
+            WordsFilepath += args[0] + ".txt";
+            args = args.Skip(1).ToArray();
 
             var command = args[0];
             switch (command)
@@ -29,25 +32,28 @@ namespace WordleSolver
                     if (args.Length < 2)
                         break;
 
-                    SolveAll(args[1]);
+                    SolveAll(args.Skip(1).ToList());
                     return;
 
                 case "solve":
                     if (args.Length < 3)
                         break;
 
-                    Solve(args[1], args[2]);
+                    Solve(
+                        secretWord: args[1],
+                        attempts: args.Skip(2).ToList()
+                    );
                     return;
             }
 
             PrintHelp();
         }
 
-        private static void SolveAll(string firstWord)
+        private static void SolveAll(List<string> attempts)
         {
-            Console.WriteLine($"Solving all secret words using {firstWord} as first guess...");
+            Console.WriteLine($"Solving all secret words using {attempts} as guess...");
             var watch = Stopwatch.StartNew();
-            var words = System.IO.File.ReadAllText(WORDS_FILEPATH);
+            var words = System.IO.File.ReadAllText(WordsFilepath);
             var precalculatedData = new PrecalculatedData(words);
             var wordsCount = precalculatedData.Words.Length;
             var totalTurns = 0;
@@ -55,61 +61,62 @@ namespace WordleSolver
             for (int i = 0; i < wordsCount; i++)
             {
                 var secretWord = precalculatedData.Words[i];
-                var turns = Solve(precalculatedData, secretWord, firstWord, printResults: false);
+                var turns = Solve(precalculatedData, secretWord, attempts, printResults: false);
                 totalTurns += turns;
-                if (turns > 5)
-                    Console.WriteLine($"Secret Word {secretWord}: {turns} turns\n");
+                if (turns > 6) looses++;
 
-                if (turns > 6)
-                    looses++;
-
-                if ((i + 1) % 10 == 0)
-                {
-                    var percentage = 100.0 * (i + 1) / wordsCount;
-                    var ellapsed = watch.ElapsedMilliseconds / 1000.0;
-                    Console.Write(
-                        $"\r   {percentage:0.00000} %" +
-                        $" ({i + 1} / {wordsCount })" +
-                        $" {ellapsed:0.00000}s" +
-                        $" ETA: {(100.0 - percentage) * ellapsed / (60.0 * percentage):0.000}min"
-                    );
-                }
+                // if (turns > 4)
+                Console.WriteLine($"Secret Word {secretWord}: {turns} turns");
+                var percentage = 100.0 * (i + 1) / wordsCount;
+                var ellapsed = watch.ElapsedMilliseconds / 1000.0;
+                Console.WriteLine(
+                    $"     {percentage:0.00000} %" +
+                    $" ({i + 1} / {wordsCount })" +
+                    $" {ellapsed:0.00000}s" +
+                    $" ETA: {(100.0 - percentage) * ellapsed / (60.0 * percentage):0.000}min"
+                );
             }
 
-            Console.WriteLine($"Using {firstWord} as first guess, " +
+            Console.WriteLine($"Using {attempts} as first guess, " +
                 $"it takes an average of {totalTurns / wordsCount } " +
                 $"turns to guess the word");
 
             Console.WriteLine($"Win rate: {100 * (wordsCount - looses) / wordsCount }");
         }
 
-        private static void Solve(string secretWord, string firstWord)
+        private static void Solve(string secretWord, List<string> attempts)
         {
-            var words = System.IO.File.ReadAllText(WORDS_FILEPATH);
+            var words = System.IO.File.ReadAllText(WordsFilepath);
             var precalculatedData = new PrecalculatedData(words);
-            Solve(precalculatedData, secretWord, firstWord, printResults: true);
+            Solve(precalculatedData, secretWord, attempts, printResults: true);
         }
 
         private static int Solve(
             PrecalculatedData precalculatedData,
             string secretWord,
-            string firstWord,
+            List<string> attempts,
             bool printResults)
         {
-            var turn = 0;
-            var candidate = firstWord;
-            var words = precalculatedData.Words;
             List<int> candidates = null;
-            var usedWords = new List<string>();
+            foreach (var attempt in attempts.Take(attempts.Count - 1).ToList())
+            {
+                var stepResult = new StepResult(secretWord, attempt);
+                candidates = GetCandidatesOnNextStep(
+                    candidates, stepResult, precalculatedData, attempt);
+
+                if (printResults)
+                    Console.WriteLine($"{attempt}    {stepResult}");
+            }
+
+            var candidate = attempts.Last();
+            var turn = 0;
             while (true)
             {
                 turn++;
                 var stepResult = new StepResult(secretWord, candidate);
                 if (printResults)
-                {
-                    Console.WriteLine(candidate);
-                    Console.WriteLine(stepResult.ToString());
-                }
+                    Console.WriteLine($"{candidate}    {stepResult}");
+
                 candidates = GetCandidatesOnNextStep(
                     candidates, stepResult, precalculatedData, candidate);
 
@@ -122,11 +129,13 @@ namespace WordleSolver
                     return turn;
                 }
 
-                if (candidates.Count == 1)
+                if (candidates.Count < 3)
                 {
-                    candidate = words[candidates[0]];
+                    candidate = precalculatedData.Words[candidates[0]];
                     continue;
                 }
+
+                // TODO prioritize candidates if same score
 
                 var minNextCandidates = int.MaxValue;
                 var candidatesToExplore = candidates.ToList();
@@ -140,15 +149,15 @@ namespace WordleSolver
                         candidatesToExplore = candidates.ToList();
                 }
 
-                for (int nextCandidateIdx = 0; nextCandidateIdx < words.Length; nextCandidateIdx++)
+                for (int nextCandidateIdx = 0; nextCandidateIdx < precalculatedData.Words.Length; nextCandidateIdx++)
                 {
                     var nextCandidatesCount = 0;
-                    var nextCandidate = words[nextCandidateIdx];
-                    if (!usedWords.Contains(nextCandidate))
+                    var nextCandidate = precalculatedData.Words[nextCandidateIdx];
+                    if (!attempts.Contains(nextCandidate))
                     {
                         for (int secretIdx = 0; secretIdx < candidatesToExplore.Count; secretIdx++)
                         {
-                            var hypotheticalSecret = words[candidatesToExplore[secretIdx]];
+                            var hypotheticalSecret = precalculatedData.Words[candidatesToExplore[secretIdx]];
                             stepResult = new StepResult(hypotheticalSecret, nextCandidate);
 
                             var hypoteticalCandidates
@@ -295,7 +304,7 @@ namespace WordleSolver
 
         private static void GetBestInitialWord(string arg)
         {
-            var words = System.IO.File.ReadAllText(WORDS_FILEPATH);
+            var words = System.IO.File.ReadAllText(WordsFilepath);
             var precalculatedData = new PrecalculatedData(words, GetMaxCandidateCount(arg));
             Console.WriteLine("Data precalculated");
 
@@ -484,8 +493,8 @@ namespace WordleSolver
         private static void PrintHelp()
             => Console.WriteLine(
                 "Specify command:" + Environment.NewLine +
-                " > WordleSolver.exe best-first-word [MAX_CANDIDATE_COUNT (optional)] " + Environment.NewLine +
-                " > WordleSolver.exe solve [SECRET_WORD] [FIRST_WORD]" + Environment.NewLine
+                " > WordleSolver.exe [ES|EN] best-first-word [MAX_CANDIDATE_COUNT (optional)] " + Environment.NewLine +
+                " > WordleSolver.exe [ES|EN] solve [SECRET_WORD] [FIRST_WORD]" + Environment.NewLine
             );
     }
 }
