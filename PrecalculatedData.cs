@@ -62,19 +62,77 @@ namespace WordleSolver
 
         public List<int> FilterByCharResult(StepResult stepResult, string candidateWord, int idx)
         {
+            var currentChar = candidateWord[idx];
+            List<int> candidates = null;
+            var inWordCharOcurrences = 0;
             switch (stepResult.Result[idx])
             {
                 case CharResult.NOT_IN_WORD:
-                    return WordIdsByForbiddenChar[candidateWord[idx]];
+                    // if GREY char is the 2nd (or 3rd?) in the word, 
+                    // return only words with < 2 occurrences of that char
+                    for (var jdx = 0; jdx < 5; jdx++)
+                    {
+                        if (idx == jdx) continue;
+
+                        var isThereSameCharWithPositiveRessult = (
+                            currentChar == candidateWord[jdx]
+                            && stepResult.Result[jdx] != CharResult.NOT_IN_WORD);
+
+                        if (isThereSameCharWithPositiveRessult)
+                            inWordCharOcurrences++;
+                    }
+
+                    if (inWordCharOcurrences == 0)
+                    {
+                        candidates = WordIdsByForbiddenChar[currentChar];
+                    }
+                    else
+                    {
+                        candidates = CreateFilteredWordIdList(
+                            word => word.Count(c => c == currentChar) == inWordCharOcurrences
+                        );
+                    }
+
+                    break;
 
                 case CharResult.IN_WORD_WRONG_POSITION:
-                    return WordIdsByNotInPosForcedCharByPosition[idx][candidateWord[idx]];
+                    // if YELLOW char is the 2nd (or 3rd?) in the word, 
+                    // return words with >= 2 ocurrences of that char
+                    candidates = WordIdsByNotInPosForcedCharByPosition[idx][currentChar];
+
+                    inWordCharOcurrences = 1;
+                    for (var jdx = 0; jdx < 5; jdx++)
+                    {
+                        if (idx == jdx) continue;
+
+                        var isThereSameCharWithPositiveRessult = (
+                            currentChar == candidateWord[jdx]
+                            && stepResult.Result[jdx] != CharResult.NOT_IN_WORD);
+
+                        if (isThereSameCharWithPositiveRessult)
+                            inWordCharOcurrences++;
+                    }
+
+                    if (inWordCharOcurrences > 0)
+                    {
+                        candidates = candidates
+                            .Select(wordId => (id: wordId, word: Words[wordId]))
+                            .Where(
+                                data => data.word.Count(c => c == currentChar) >= inWordCharOcurrences
+                                    && data.word[idx] != currentChar
+                            )
+                            .Select(data => data.id)
+                            .ToList();
+                    }
+
+                    break;
 
                 case CharResult.IN_WORD_IN_POSITION:
-                    return WordIdsByInPosForcedCharByPosition[idx][candidateWord[idx]];
+                    candidates = WordIdsByInPosForcedCharByPosition[idx][currentChar];
+                    break;
             }
 
-            return null;
+            return candidates;
         }
 
         private Dictionary<char, List<int>>[] GetArrayOfFilteredWordIdListByPosition(
