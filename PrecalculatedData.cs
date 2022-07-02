@@ -127,7 +127,7 @@ namespace WordleSolver
                             inWordCharOcurrences++;
                     }
 
-                    if (inWordCharOcurrences > 0)
+                    if (inWordCharOcurrences > 1)
                     {
                         nextCandidates = nextCandidates
                             .Select(wordId => (id: wordId, word: Words[wordId]))
