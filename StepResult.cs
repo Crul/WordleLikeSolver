@@ -51,23 +51,22 @@ namespace WordleSolver
             if (candidateChar == secret[idx])
                 return CharResult.IN_WORD_IN_POSITION;
 
-            if (secret.Contains(candidateChar))
+            var charOccurrencesInSecret = 0;
+            var charOccurrencesRevealed = 0;
+            for (var jdx = 0; jdx < 5; jdx++)
             {
-                var charOccurrencesRevealed = 0;
-                for (var jdx = 0; jdx < 5; jdx++)
-                {
-                    if (idx == jdx) continue;
+                if (secret[jdx] == candidateChar)
+                    charOccurrencesInSecret++;
 
-                    if (candidate[jdx] == candidateChar)
-                    {
-                        if (secret[jdx] == candidateChar || jdx < idx)
-                            charOccurrencesRevealed++;
-                    }
-                }
-
-                if (secret.Count(c => c == candidateChar) > charOccurrencesRevealed)
-                    return CharResult.IN_WORD_WRONG_POSITION;
+                if (idx != jdx
+                    && candidate[jdx] == candidateChar
+                    && (secret[jdx] == candidateChar || jdx < idx)
+                )
+                    charOccurrencesRevealed++;
             }
+
+            if (charOccurrencesInSecret > charOccurrencesRevealed)
+                return CharResult.IN_WORD_WRONG_POSITION;
 
             return CharResult.NOT_IN_WORD;
         }
