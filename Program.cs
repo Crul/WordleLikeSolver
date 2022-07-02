@@ -225,19 +225,19 @@ namespace WordleSolver
             // no loops for performance (not tested, so... premature optimization anti-pattern?)
 
             var candidatesOn2ndStepByChar0 = precalculatedData
-                .FilterByCharResult(stepResult, candidateWord, 0);
+                .FilterByCharResult(candidates, stepResult, candidateWord, 0);
 
             var candidatesOn2ndStepByChar1 = precalculatedData
-                .FilterByCharResult(stepResult, candidateWord, 1);
+                .FilterByCharResult(candidates, stepResult, candidateWord, 1);
 
             var candidatesOn2ndStepByChar2 = precalculatedData
-                .FilterByCharResult(stepResult, candidateWord, 2);
+                .FilterByCharResult(candidates, stepResult, candidateWord, 2);
 
             var candidatesOn2ndStepByChar3 = precalculatedData
-                .FilterByCharResult(stepResult, candidateWord, 3);
+                .FilterByCharResult(candidates, stepResult, candidateWord, 3);
 
             var candidatesOn2ndStepByChar4 = precalculatedData
-                .FilterByCharResult(stepResult, candidateWord, 4);
+                .FilterByCharResult(candidates, stepResult, candidateWord, 4);
 
             var candidatesCount = candidates?.Count ?? int.MaxValue;
             var countChar0 = candidatesOn2ndStepByChar0.Count;
@@ -398,19 +398,19 @@ namespace WordleSolver
             // no loops for performance (not tested, so... premature optimization anti-pattern?)
 
             var candidatesOn2ndStepByChar0 = precalculatedData
-                .FilterByCharResult(stepResult, candidateWord, 0);
+                .FilterByCharResult(null, stepResult, candidateWord, 0);
 
             var candidatesOn2ndStepByChar1 = precalculatedData
-                .FilterByCharResult(stepResult, candidateWord, 1);
+                .FilterByCharResult(null, stepResult, candidateWord, 1);
 
             var candidatesOn2ndStepByChar2 = precalculatedData
-                .FilterByCharResult(stepResult, candidateWord, 2);
+                .FilterByCharResult(null, stepResult, candidateWord, 2);
 
             var candidatesOn2ndStepByChar3 = precalculatedData
-                .FilterByCharResult(stepResult, candidateWord, 3);
+                .FilterByCharResult(null, stepResult, candidateWord, 3);
 
             var candidatesOn2ndStepByChar4 = precalculatedData
-                .FilterByCharResult(stepResult, candidateWord, 4);
+                .FilterByCharResult(null, stepResult, candidateWord, 4);
 
             var countChar0 = candidatesOn2ndStepByChar0.Count;
             var countChar1 = candidatesOn2ndStepByChar1.Count;
