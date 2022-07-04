@@ -74,10 +74,9 @@ namespace WordleSolver
                     // return only words with == X occurrences of that char
                     for (var jdx = 0; jdx < 5; jdx++)
                     {
-                        if (idx == jdx) continue;
-
                         var isThereSameCharWithPositiveRessult = (
-                            currentChar == candidateWord[jdx]
+                            idx != jdx
+                            && currentChar == candidateWord[jdx]
                             && stepResult.Result[jdx] != CharResult.NOT_IN_WORD);
 
                         if (isThereSameCharWithPositiveRessult)
@@ -114,11 +113,9 @@ namespace WordleSolver
                     // return words with >= 2 ocurrences of that char
                     nextCandidates = WordIdsByNotInPosForcedCharByPosition[idx][currentChar];
 
-                    inWordCharOcurrences = 1;
+                    inWordCharOcurrences = 0;
                     for (var jdx = 0; jdx < 5; jdx++)
                     {
-                        if (idx == jdx) continue;
-
                         var isThereSameCharWithPositiveRessult = (
                             currentChar == candidateWord[jdx]
                             && stepResult.Result[jdx] != CharResult.NOT_IN_WORD);
